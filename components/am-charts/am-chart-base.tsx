@@ -1,4 +1,4 @@
-"\"use client"
+"use client"
 
 import { useEffect, useRef } from "react"
 import * as am5 from "@amcharts/amcharts5"

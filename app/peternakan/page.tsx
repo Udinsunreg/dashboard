@@ -15,6 +15,7 @@ import {
   Leaf,
   Menu,
   Settings,
+  Thermometer,
   Beef,
   Users,
   X,
@@ -34,6 +35,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import {
   SidebarProvider,
   Sidebar,
@@ -51,10 +53,16 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 
+// First, import the new chart components at the top of the file with the other imports
+import { LivestockIncomeChart } from "@/components/am-charts/livestock-income-chart"
+import { IncomeBreakdownChart } from "@/components/am-charts/income-breakdown-chart"
+import { IncomeByLocationChart } from "@/components/am-charts/income-by-location-chart"
+
 // Import amCharts components
 import { SpeciesDistributionChart } from "@/components/am-charts/species-distribution-chart"
 import { GrowthChart } from "@/components/am-charts/growth-chart"
-import { LivestockBreedDistributionChart } from "@/components/am-charts/livestock-breed-distribution-chart"
+import { ProductionChart } from "@/components/am-charts/production-chart"
+import { RevenueChart } from "@/components/am-charts/revenue-chart"
 
 // Mock data for livestock production
 const productionData = [
@@ -90,7 +98,7 @@ const revenueData = [
 
 // Mock data for livestock species distribution
 const speciesData = [
-  { name: "Sapi Perah", value: 35, color: "#0088FE" },
+  { name: "Sapi Perah", value: 35, color: "#8884d8" },
   { name: "Sapi Potong", value: 25, color: "#00C49F" },
   { name: "Kambing", value: 20, color: "#FFBB28" },
   { name: "Domba", value: 15, color: "#FF8042" },
@@ -694,19 +702,6 @@ export default function PeternakanPage() {
                       </Card>
                     </div>
 
-                    {/* Add the new card with more height for the breed distribution chart */}
-                    <Card className="col-span-1 md:col-span-2 lg:col-span-1">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xl font-bold">Distribusi Jenis Ternak Berdasarkan Ras</CardTitle>
-                        <CardDescription>Persentase populasi berdasarkan ras ternak</CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-0 pb-4">
-                        <div className="flex items-center justify-center h-[350px]">
-                          <LivestockBreedDistributionChart />
-                        </div>
-                      </CardContent>
-                    </Card>
-
                     <Card>
                       <CardHeader>
                         <CardTitle>Status Ternak</CardTitle>
@@ -834,25 +829,303 @@ export default function PeternakanPage() {
                     </Card>
                   </TabsContent>
 
-                  {/* Other tabs content */}
                   {/* Devices Tab */}
                   <TabsContent value="devices" className="space-y-6">
-                    {/* Devices content */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle>Perangkat Peternakan</CardTitle>
+                            <CardDescription>Daftar perangkat yang terpasang di kandang</CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                              <SelectTrigger className="w-[130px]">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Semua Status</SelectItem>
+                                <SelectItem value="active">Aktif</SelectItem>
+                                <SelectItem value="inactive">Tidak Aktif</SelectItem>
+                                <SelectItem value="warning">Peringatan</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {filteredDevices.map((device) => (
+                            <Card
+                              key={device.id}
+                              className={
+                                device.status === "inactive"
+                                  ? "border-red-200 bg-red-50"
+                                  : device.status === "warning"
+                                    ? "border-yellow-200 bg-yellow-50"
+                                    : ""
+                              }
+                            >
+                              <CardHeader className="pb-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {device.name.includes("Aerator") ? (
+                                      <Thermometer className="h-4 w-4 text-blue-600" />
+                                    ) : device.name.includes("Water") ? (
+                                      <Milk className="h-4 w-4 text-blue-600" />
+                                    ) : device.name.includes("Feeder") ? (
+                                      <Wheat className="h-4 w-4 text-amber-600" />
+                                    ) : (
+                                      <Activity className="h-4 w-4 text-purple-600" />
+                                    )}
+                                    <CardTitle className="text-sm font-medium">{device.name}</CardTitle>
+                                  </div>
+                                  <Badge
+                                    variant={
+                                      device.status === "active"
+                                        ? "default"
+                                        : device.status === "inactive"
+                                          ? "destructive"
+                                          : "outline"
+                                    }
+                                    className={device.status === "warning" ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                                  >
+                                    {device.status === "active"
+                                      ? "Aktif"
+                                      : device.status === "inactive"
+                                        ? "Tidak Aktif"
+                                        : "Peringatan"}
+                                  </Badge>
+                                </div>
+                                <CardDescription>{device.location}</CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Pemeliharaan Terakhir:</span>
+                                    <span>{new Date(device.lastMaintenance).toLocaleDateString("id-ID")}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Baterai:</span>
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={
+                                          device.battery > 70
+                                            ? "text-green-600"
+                                            : device.battery > 30
+                                              ? "text-yellow-600"
+                                              : "text-red-600"
+                                        }
+                                      >
+                                        {device.battery}%
+                                      </span>
+                                      <div className="h-2 w-16 rounded-full bg-muted">
+                                        <div
+                                          className={`h-full rounded-full ${
+                                            device.battery > 70
+                                              ? "bg-green-600"
+                                              : device.battery > 30
+                                                ? "bg-yellow-600"
+                                                : "bg-red-600"
+                                          }`}
+                                          style={{ width: device.battery + "%" }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </TabsContent>
 
                   {/* Data Sensor Tab */}
                   <TabsContent value="data" className="space-y-6">
-                    {/* Data sensor content */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Data Sensor Kandang</CardTitle>
+                        <CardDescription>Informasi dari sensor yang terpasang di kandang</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {sensorData.map((sensor) => (
+                            <Card key={sensor.id}>
+                              <CardHeader className="pb-2">
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-sm font-medium">{sensor.name}</CardTitle>
+                                  <Badge
+                                    variant={
+                                      sensor.status === "normal"
+                                        ? "default"
+                                        : sensor.status === "warning"
+                                          ? "destructive"
+                                          : "outline"
+                                    }
+                                    className={sensor.status === "warning" ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                                  >
+                                    {sensor.status === "normal" ? "Normal" : "Peringatan"}
+                                  </Badge>
+                                </div>
+                                <CardDescription>{sensor.type}</CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Nilai:</span>
+                                    <span>{sensor.value}</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </TabsContent>
 
                   {/* Production Tab */}
                   <TabsContent value="production" className="space-y-6">
-                    {/* Production content */}
-                  </TabsContent>
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Grafik Produksi</CardTitle>
+                          <CardDescription>Jumlah produksi ternak per bulan</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-[400px] w-full">
+                            <ProductionChart data={productionData} />
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                  {/* Income Tab */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Grafik Pendapatan</CardTitle>
+                          <CardDescription>Target vs Aktual pendapatan peternakan</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-[400px] w-full">
+                            <RevenueChart data={revenueData} />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+                  {/* Income Details Tab */}
                   <TabsContent value="income" className="space-y-6">
-                    {/* Income content */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Analisis Pendapatan Peternakan</CardTitle>
+                        <CardDescription>Perbandingan pendapatan aktual dan target dengan harga pasar</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <LivestockIncomeChart />
+                      </CardContent>
+                    </Card>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Distribusi Pendapatan</CardTitle>
+                          <CardDescription>Persentase pendapatan berdasarkan jenis produk</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <IncomeBreakdownChart />
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Pendapatan per Lokasi</CardTitle>
+                          <CardDescription>Kontribusi pendapatan berdasarkan lokasi kandang</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <IncomeByLocationChart />
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Rincian Pendapatan Bulanan</CardTitle>
+                        <CardDescription>Detail pendapatan per bulan dan kategori produk</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b">
+                                <th className="text-left py-3 px-4">Bulan</th>
+                                <th className="text-right py-3 px-4">Susu (Juta Rp)</th>
+                                <th className="text-right py-3 px-4">Daging (Juta Rp)</th>
+                                <th className="text-right py-3 px-4">Telur (Juta Rp)</th>
+                                <th className="text-right py-3 px-4">Lainnya (Juta Rp)</th>
+                                <th className="text-right py-3 px-4">Total (Juta Rp)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="border-b hover:bg-muted/50">
+                                <td className="py-2 px-4">Januari</td>
+                                <td className="text-right py-2 px-4">12.5</td>
+                                <td className="text-right py-2 px-4">8.3</td>
+                                <td className="text-right py-2 px-4">3.2</td>
+                                <td className="text-right py-2 px-4">1.5</td>
+                                <td className="text-right py-2 px-4 font-medium">25.5</td>
+                              </tr>
+                              <tr className="border-b hover:bg-muted/50">
+                                <td className="py-2 px-4">Februari</td>
+                                <td className="text-right py-2 px-4">13.2</td>
+                                <td className="text-right py-2 px-4">9.1</td>
+                                <td className="text-right py-2 px-4">3.5</td>
+                                <td className="text-right py-2 px-4">1.7</td>
+                                <td className="text-right py-2 px-4 font-medium">27.5</td>
+                              </tr>
+                              <tr className="border-b hover:bg-muted/50">
+                                <td className="py-2 px-4">Maret</td>
+                                <td className="text-right py-2 px-4">14.8</td>
+                                <td className="text-right py-2 px-4">10.2</td>
+                                <td className="text-right py-2 px-4">3.8</td>
+                                <td className="text-right py-2 px-4">1.9</td>
+                                <td className="text-right py-2 px-4 font-medium">30.7</td>
+                              </tr>
+                              <tr className="border-b hover:bg-muted/50">
+                                <td className="py-2 px-4">April</td>
+                                <td className="text-right py-2 px-4">15.3</td>
+                                <td className="text-right py-2 px-4">11.5</td>
+                                <td className="text-right py-2 px-4">4.2</td>
+                                <td className="text-right py-2 px-4">2.1</td>
+                                <td className="text-right py-2 px-4 font-medium">33.1</td>
+                              </tr>
+                              <tr className="border-b hover:bg-muted/50">
+                                <td className="py-2 px-4">Mei</td>
+                                <td className="text-right py-2 px-4">16.7</td>
+                                <td className="text-right py-2 px-4">12.3</td>
+                                <td className="text-right py-2 px-4">4.5</td>
+                                <td className="text-right py-2 px-4">2.3</td>
+                                <td className="text-right py-2 px-4 font-medium">35.8</td>
+                              </tr>
+                              <tr className="border-b hover:bg-muted/50">
+                                <td className="py-2 px-4">Juni</td>
+                                <td className="text-right py-2 px-4">17.2</td>
+                                <td className="text-right py-2 px-4">13.1</td>
+                                <td className="text-right py-2 px-4">4.8</td>
+                                <td className="text-right py-2 px-4">2.5</td>
+                                <td className="text-right py-2 px-4 font-medium">37.6</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" className="w-full">
+                          <Download className="mr-2 h-4 w-4" />
+                          Unduh Laporan Lengkap
+                        </Button>
+                      </CardFooter>
+                    </Card>
                   </TabsContent>
                 </Tabs>
               </div>
